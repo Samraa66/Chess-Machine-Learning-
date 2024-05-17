@@ -1,0 +1,36 @@
+import tensorflow as tf
+import numpy as np
+import time
+
+# Create an 8x8x8 binary tensor
+binary_tensor = np.random.randint(0, 2, (8, 8, 8)).astype(np.float32)
+
+# Create an 8x8x8 tensor with random scalar entries
+scalar_tensor = np.random.rand(8, 8, 8).astype(np.float32)
+
+# Convert numpy arrays to TensorFlow tensors
+binary_tensor_tf = tf.constant(binary_tensor)
+scalar_tensor_tf = tf.constant(scalar_tensor)
+
+# Element-wise multiplication
+output_tensor_tf = binary_tensor_tf * scalar_tensor_tf
+
+# Convert the result back to numpy for display
+output_tensor = output_tensor_tf.numpy()
+
+# Print the tensors
+print("Binary Tensor:\n", binary_tensor)
+print("Scalar Tensor:\n", scalar_tensor)
+print("Output Tensor:\n", output_tensor)
+
+# Benchmarking code
+def benchmark():
+    start_time = time.time()
+    for _ in range(1000):
+        _ = binary_tensor_tf * scalar_tensor_tf
+    end_time = time.time()
+    return end_time - start_time
+
+# Run the benchmark
+execution_time = benchmark()
+print(f"Execution time for 1000 iterations: {execution_time} seconds")
