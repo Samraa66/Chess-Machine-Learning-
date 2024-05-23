@@ -49,6 +49,7 @@ def generate_initial_black_pawns():
     black_pawns[1, :] = 1
     return black_pawns
 
+
 def generate_initial_black_rooks():
     black_rooks = np.zeros((8, 8), dtype=int)
     black_rooks[0, 0] = 1
@@ -85,4 +86,5 @@ black_bishops = generate_initial_black_bishops()
 black_queen = generate_initial_black_queen()
 black_king = generate_initial_black_king()
 
+print(black_pawns)
 
