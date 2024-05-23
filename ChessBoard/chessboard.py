@@ -1,4 +1,5 @@
 import numpy as np 
+import tensorflow as tf
 
 # Define the functions to generate initial white piece positions
 def generate_initial_white_pawns():
@@ -49,7 +50,6 @@ def generate_initial_black_pawns():
     black_pawns[1, :] = 1
     return black_pawns
 
-
 def generate_initial_black_rooks():
     black_rooks = np.zeros((8, 8), dtype=int)
     black_rooks[0, 0] = 1
@@ -86,5 +86,16 @@ black_bishops = generate_initial_black_bishops()
 black_queen = generate_initial_black_queen()
 black_king = generate_initial_black_king()
 
-print(black_pawns)
+def generate_legal_moves(game_state):
+    legal_moves = tf.zeros([8,8,73],dtype=tf.float32) #
+
+    knight_moves = [
+        (2,1) # move 1
+        (2,1) # move 2
+        ()
+    ]
+
+
+
+
 
