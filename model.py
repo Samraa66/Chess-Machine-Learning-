@@ -21,11 +21,11 @@ class ResBlock(tf.keras.layers.Layer):
         x = tf.nn.relu(x)
         return x
 
-class ResNet(keras.Model):
-    def __init__(self, num_resBlocks, num_hidden):
-        super(ResNet, self).__init__()
+class AlphaNet(keras.Model):
+    def __init__(self, num_resBlocks, num_hidden, t):
+        super(AlphaNet, self).__init__()
         self.startBlock = tf.keras.Sequential([
-            layers.Input(shape=(3, 3, 3)),  # Adjust based on Chess Board
+            layers.Input(shape=(8, 8, 14*t + 7)),  # Adjust based on Chess Board
             layers.Conv2D(num_hidden, kernel_size=3, padding='same'),
             layers.BatchNormalization(),
             layers.ReLU()
@@ -34,11 +34,8 @@ class ResNet(keras.Model):
         self.backBone = [ResBlock(num_hidden) for _ in range(num_resBlocks)]
 
         self.policyHead = tf.keras.Sequential([
-            layers.Conv2D(32, kernel_size=3, padding='same'),
-            layers.BatchNormalization(),
-            layers.ReLU(),
-            layers.Flatten(),
-            layers.Dense(9, activation='softmax')  # Adjust based on possible moves output
+            layers.Conv2D(73, kernel_size=1, padding='same'),  # 73 due to the 73 planes for possible moves
+            layers.Softmax()
         ])
 
         self.valueHead = tf.keras.Sequential([
@@ -61,8 +58,9 @@ class ResNet(keras.Model):
 # Test
 num_resBlocks = 3
 num_hidden = 64
-random_tensor = tf.random.uniform(shape=(1, 3, 3, 3), minval=0, maxval=1)
-model = ResNet(num_resBlocks, num_hidden)
+t = 8
+random_tensor = tf.random.uniform(shape=(1, 8, 8, 119), minval=0, maxval=1)
+model = AlphaNet(num_resBlocks, num_hidden, 8)
 
 # Define optimizer
 optimizer = tf.keras.optimizers.Adam()
@@ -72,12 +70,13 @@ policy_loss_fn = tf.keras.losses.CategoricalCrossentropy()
 value_loss_fn = tf.keras.losses.MeanSquaredError()
 
 # Generate random targets for testing
-random_policy_target = tf.random.uniform(shape=(1, 9), minval=0, maxval=1)
+random_policy_target = tf.random.uniform(shape=(1, 8, 8, 73), minval=0, maxval=1)
 random_value_target = tf.random.uniform(shape=(1, 1), minval=0, maxval=1)
 
 # Training step
 with tf.GradientTape() as tape:
-    policy, value = model(random_tensor)
+    policy, value = model(random_tensor) # use model x to generate tensor output rather than model.predict(x)
+    # https://stackoverflow.com/questions/55308425/difference-between-modelx-and-model-predictx-in-keras ^^
     policy_loss = policy_loss_fn(random_policy_target, policy)
     value_loss = value_loss_fn(random_value_target, value)
     total_loss = policy_loss + value_loss
