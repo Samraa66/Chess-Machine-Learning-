@@ -95,9 +95,15 @@ def generate_board_dense():
 def generate_initial_board_s():
     array_white_pawns = [(6, i, 0) for i in range(8)]
     array_black_pawns = [(1,i,6) for i in range(8)]
-    return [array_white_pawns,(7, 1, 1), (7, 6, 1),(7, 2, 2), (7, 5, 2),
+    indices = [array_white_pawns,(7, 1, 1), (7, 6, 1),(7, 2, 2), (7, 5, 2),
     (7, 0, 3), (7, 7, 3),(7, 3, 4),(7, 4, 5),array_black_pawns,(0,1,7),
     (0,6,7),(0,2,8),(0,5,8),(0,0,9),(0,7,9),(0,3,10),(0,4,11)]
+    indices = np.array(indices, dtype=int)
+    values = np.ones(len(indices), dtype=int)
+
+    sparse_board = tf.sparse.SparseTensor(indices=indices, values=values, dense_shape=[8, 8, 12])
+
+    return sparse_board
 
 #def generate_initial_white_pawns_sparse():
     #return [(6, i, 0) for i in range(8)]
