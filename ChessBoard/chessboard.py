@@ -1,6 +1,7 @@
 import numpy as np 
 import tensorflow as tf
-
+#0 - 5 is white pieces, 6 - 12 is black pieces
+#pawn, night, bishop, rook, queen, king
 # Define the functions to generate initial white piece positions
 def generate_initial_white_pawns():
 
@@ -85,6 +86,7 @@ black_knights = generate_initial_black_knights()
 black_bishops = generate_initial_black_bishops()
 black_queen = generate_initial_black_queen()
 black_king = generate_initial_black_king()
+
 
 def generate_legal_moves(game_state):
     legal_moves = tf.zeros([8,8,73],dtype=tf.float32) #

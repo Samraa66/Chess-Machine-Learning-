@@ -2,6 +2,9 @@ import tensorflow as tf
 import keras
 from keras import layers
 import numpy as np
+import random
+
+random.seed(10)
 
 class ResBlock(tf.keras.layers.Layer):
     def __init__(self, num_hidden):
@@ -40,10 +43,12 @@ class AlphaNet(keras.Model):
         ])
 
         self.valueHead = tf.keras.Sequential([
-            layers.Conv2D(3, kernel_size=3, padding='same'),
+            layers.Conv2D(1, kernel_size=1, padding='same'),
             layers.BatchNormalization(),
             layers.ReLU(),
             layers.Flatten(),
+            layers.Dense(256),
+            layers.ReLU(),
             layers.Dense(1),
             layers.Activation('tanh')
         ])
@@ -75,6 +80,59 @@ def generate_initial_board_s():
 
     return sparse_board
 
+def get_initial_piece_position_dict_and_tensor():
+    initial_piece_to_position = {}
+    initial_tensor = tf.zeros((8, 8, 12))
+    indices = []
+
+    # for pawns
+    initial_piece_to_position[0] = []
+    array_white_pawns = []
+    array_black_pawns = []
+    for i in range(8):
+        initial_piece_to_position[0].append((6, i)) # white
+        initial_piece_to_position[6].append((1, i)) # black
+
+        indices.append((6, i, 0))
+        indices.append((1, i, 6))
+
+    # for knights
+    initial_piece_to_position[1] = [(7, 1), (7, 6)] # white
+    indices.extend((7, 1, 1), (7, 6, 1))
+    initial_piece_to_position[7] = [(0, 1), (0, 6)] # black
+    indices.extend((0, 1, 7), (0, 6, 7))
+
+    # for bishop
+    initial_piece_to_position[2] = [(7, 2), (7, 5)] # white
+    indices.extend((7, 2, 2), (7, 5, 2))
+    initial_piece_to_position[8] = [(0, 2), (0, 5)] # black
+    indices.extend((0, 2, 8), (0, 5, 8))
+
+    # rook
+    initial_piece_to_position[3] = [(7, 0,), (7, 7)] # white
+    indices.extend((7, 0, 3), (7, 7, 3))
+    initial_piece_to_position[9] = [((0, 0, 9)), ((0, 7, 9))] # black
+    indices.extend((0, 0, 9), (0, 7, 9))
+
+    # queen
+    initial_piece_to_position[4] = [(7, 3)] # white
+    indices.append((7, 3, 4))
+    initial_piece_to_position[10] = [(0, 3)] # black
+    indices.append((0, 3, 10))
+
+    # king
+    initial_piece_to_position[5] = [(7, 4)] # white
+    indices.append((7, 4, 5))
+    initial_piece_to_position[11] = [(0, 4)]
+    indices.append((0, 4, 11))
+
+
+    # generate tensor
+    updates = tf.ones(len(indices), dtype=tf.float32)
+    updated_tensor = tf.tensor_scatter_nd_update(initial_tensor, indices, updates)
+
+    return updated_tensor, initial_piece_to_position
+
 def generate_initial_board_st():
     array_white_pawns = [(6, i, 0) for i in range(8)]
     array_black_pawns = [(1, i, 6) for i in range(8)]
@@ -93,32 +151,33 @@ def generate_initial_board_st():
     values = np.ones(len(indices), dtype=int)
     sparse_board = tf.sparse.SparseTensor(indices=indices, values=values, dense_shape=[8, 8, 12])
 
-    v = tf.sparse.to_dense(sparse_board)
-    print(v)
-
     return sparse_board
 
 
 def add_batch_dimension(sparse_tensor):
 
     # Convert sparse tensor to dense tensor
-    dense_tensor = tf.sparse.reorder(sparse_tensor)
-    dense_tensor = tf.sparse.to_dense(dense_tensor)
+    dense_tensor = tf.sparse.to_dense(sparse_tensor)
 
     # Add batch dimension using tf.expand_dims
     batch_dense_tensor = tf.expand_dims(dense_tensor, axis=0)
 
     return batch_dense_tensor
 
+def print_matrices_from_tensor(dense_tensor):
+    # Iterate through the 73 matrices
+    for i in range(dense_tensor.shape[-1]):
+        # Extract the 8x8 matrix
+        matrix = dense_tensor[0, :, :, i]
+        print(f"Matrix {i + 1}:\n{matrix.numpy()}\n")
+
 # Test
 num_resBlocks = 3
 num_hidden = 64
 t = 1
-random_tensor = generate_initial_board_st()
+initial_board = generate_initial_board_st()
+initial_board = add_batch_dimension(initial_board)
 
-'''
-random_tensor =  add_batch_dimension(random_tensor)
-print(random_tensor)
 #random_tensor = tf.random.uniform(shape=(1, 8, 8, 119), minval=0, maxval=1)
 model = AlphaNet(num_resBlocks, num_hidden, 8)
 
@@ -131,13 +190,13 @@ policy_loss_fn = tf.keras.losses.CategoricalCrossentropy()
 value_loss_fn = tf.keras.losses.MeanSquaredError()
 
 
-policy, value = model(random_tensor)
+policy, value = model(initial_board)
 print('policy')
-print(policy)
+print_matrices_from_tensor(policy)
 
 print('Value')
 print(value)
-'''
+
 '''
 # Training step
 with tf.GradientTape() as tape:
