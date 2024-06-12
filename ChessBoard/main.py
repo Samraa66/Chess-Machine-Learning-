@@ -1,6 +1,4 @@
-
 # layer:((white, black),(move_update))
-
 pieces_and_moves = {
     0: (((0, 3, 4, 5), (3, 4, 5)), (-1, 0)),
     1: (((0, 3, 4), (3, 4)), (-2, 0)),
@@ -78,3 +76,31 @@ pieces_and_moves = {
 }
 
 print(pieces_and_moves)
+
+
+# 5 move history gamestate
+def generate_legal_moves(game_state):
+  # first we check tensor for currrent players turn
+  turn = game_state[0, 0, 70]  # should be zero or one
+  
+  # finding pieces
+  if turn == 0:
+    my_pieces = game_state[:, :, 56:61]
+    your_pieces = game_state[:, :, 62:67]
+  else:
+    my_pieces = game_state[:, :, 62:67]
+    your_pieces = game_state[:, :, 56:61]
+  # my positions will contain locations of pieces on boaed
+  my_positions = my_pieces.indices
+  your_positions = your_pieces.indices
+  
+  for i in range(73): # for each layer we want to check if pieces can move in layer direction
+    piece_and_move = pieces_and_moves[i]
+    piece_for_this_kind_of_move= piece_and_move[0]
+    for piece_x, piece_y, piece_type in my_positions: # for each of my pieces on the board 
+      if piece_type in piece_for_this_kind_of_move[turn]:
+        # here we know we can move this piece in this direction so test potential location
+        potential_piece_x, potential_piece_y = (piece_x, piece_y) + piece_and_move[1] 
+        # first check if new location is out of bounds or my piece is blocking
+        if not (potential_piece_x>8 or potential_piece_x<0 or potential_piece_y>8 or potential_piece_y<0 or any(potential_piece_x == pos[0] and potential_piece_y == pos[1] for pos in my_positions))
+ 
