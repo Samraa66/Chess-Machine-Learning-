@@ -194,8 +194,20 @@ policy, value = model(initial_board)
 print('policy')
 print_matrices_from_tensor(policy)
 
+policy_flat = tf.reshape(policy, [-1])
+
+# Apply the softmax function OVER ALL LAYERS
+policy_softmax = tf.nn.softmax(policy_flat)
+# Reshape back to the original shape
+policy_softmax_reshaped = tf.reshape(policy_softmax, policy.shape)
+sum_of_entries = tf.reduce_sum(policy_softmax_reshaped)
+
+print("Sum of all entries in the tensor:", sum_of_entries.numpy())
+
 print('Value')
 print(value)
+
+
 
 '''
 # Training step

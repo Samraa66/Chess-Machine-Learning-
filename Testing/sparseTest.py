@@ -381,6 +381,7 @@ def find_ones_dense(board):
 
 # Function to find the indices of ones in a sparse tensor
 def find_ones_sparse(sparse_board):
+    myvar = sparse_board.indices.numpy()
     return sparse_board.indices.numpy()
 
 
