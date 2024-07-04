@@ -1,4 +1,6 @@
+import numpy as np
 import tensorflow as tf
+import chessboard
 
 pieces_and_moves = {
     0: (((0, 3, 4, 5), (3, 4, 5)), (-1, 0)),
@@ -57,43 +59,68 @@ pieces_and_moves = {
     53: (((2, 4), (2, 4)), (-5, -5)),
     54: (((2, 4), (2, 4)), (-6, -6)),
     55: (((2, 4), (2, 4)), (-7, -7)),
-    56: (((1), (1)), (-2, 1)),
-    57: (((1), (1)), (-1, 2)),
-    58: (((1), (1)), (1, 2)),
-    59: (((1), (1)), (2, 1)),
-    60: (((1), (1)), (2, -1)),
-    61: (((1), (1)), (1, -2)),
-    62: (((1), (1)), (-1, -2)),
-    63: (((1), (1)), (-2, -1)),
-    64: (((1), (1)), ((-1, -1), (1, -2))),
-    65: (((0), (0)), ((-1, 0), (1, 0))),
-    66: (((0), (0)), ((-1, 1), (1, 1))),
-    67: (((0), (0)), ((-1, -1), (1, -1))),
-    68: (((0), (0)), ((-1, 0), (1, 0))),
-    69: (((0), (0)), ((-1, 1), (1, 1))),
-    70: (((0), (0)), ((-1, -1), (1, -1))),
-    71: (((0), (0)), ((-1, 0), (1, 0))),
-    72: (((0), (0)), ((-1, 1), (1, 1))),
+    56: (((1,), (1,)), (-2, 1)),
+    57: (((1,), (1,)), (-1, 2)),
+    58: (((1,), (1,)), (1, 2)),
+    59: (((1,), (1,)), (2, 1)),
+    60: (((1,), (1,)), (2, -1)),
+    61: (((1,), (1,)), (1, -2)),
+    62: (((1,), (1,)), (-1, -2)),
+    63: (((1,), (1,)), (-2, -1)),
+    64: (((1,), (1,)), ((-1, -1), (1, -1))),
+    65: (((0,), (0,)), ((-1, 0), (1, 0))),
+    66: (((0,), (0,)), ((-1, 1), (1, 1))),
+    67: (((0,), (0,)), ((-1, -1), (1, -1))),
+    68: (((0,), (0,)), ((-1, 0), (1, 0))),
+    69: (((0,), (0,)), ((-1, 1), (1, 1))),
+    70: (((0,), (0,)), ((-1, -1), (1, -1))),
+    71: (((0,), (0,)), ((-1, 0), (1, 0))),
+    72: (((0,), (0,)), ((-1, 1), (1, 1))),
 }
 
-print(pieces_and_moves)
+
+
+# Generate initial piece positions
+white_pawns = chessboard.generate_initial_white_pawns()
+white_rooks = chessboard.generate_initial_white_rooks()
+white_knights = chessboard.generate_initial_white_knights()
+white_bishops = chessboard.generate_initial_white_bishops()
+white_queen = chessboard.generate_initial_white_queen()
+white_king = chessboard.generate_initial_white_king()
+black_pawns = chessboard.generate_initial_black_pawns()
+black_rooks = chessboard.generate_initial_black_rooks()
+black_knights = chessboard.generate_initial_black_knights()
+black_bishops = chessboard.generate_initial_black_bishops()
+black_queen = chessboard.generate_initial_black_queen()
+black_king = chessboard.generate_initial_black_king()
+game_state = tf.stack([white_pawns, white_knights, white_bishops, white_rooks, white_queen, white_king, black_pawns, black_knights, black_bishops, black_rooks, black_queen, black_king], axis=0)
+game_state = tf.sparse.from_dense(game_state)
+
 
 
 # 5 move history gamestate
 def generate_legal_moves(game_state):
   # first we check tensor for currrent players turn
-  turn = game_state[0, 0, 70]  # should be zero or one
-
+  #turn = game_state[0, 0, 70]  # should be zero or one
+  turn = 0
+  all_indices = game_state.indices
+  my_positions = []  # potentially need to do .numpy()
+  your_positions = []
   # finding pieces
   if turn == 0:
-    my_pieces = game_state[:, :, 56:61]
-    your_pieces = game_state[:, :, 62:67]
+    #my_pieces = game_state[:, :, 56:61]
+    #your_pieces = game_state[:, :, 62:67]
+    # NEED TO CHANGE TO LAYER, X, Y
+    my_positions = tf.boolean_mask(all_indices, all_indices[:, 0] < 5)
+    your_positions = tf.boolean_mask(all_indices, all_indices[:, 0] > 5)
+
   else:
-    my_pieces = game_state[:, :, 62:67]
-    your_pieces = game_state[:, :, 56:61]
+    #my_pieces = game_state[:, :, 62:67]
+    #your_pieces = game_state[:, :, 56:61]
+    your_positions = tf.boolean_mask(all_indices, all_indices[:, 0] < 5)
+    my_positions = tf.boolean_mask(all_indices, all_indices[:, 0] > 5)
   # my positions will contain locations of pieces on board
-  my_positions = my_pieces.indices  # potentially need to do .numpy()
-  your_positions = your_pieces.indices  # potentially need to do .numpy()
+
   # idea for pins, initialize all pieces with allowed squares of all 8x8 board, except for the first piece in one of 9 radial directions from king that right after has a piece of the opposite color that attacks in this direction, that piece is pinned and can only move in this specified direction.
 
   # legal moves should be in the form piece_x, piece_y, layer
@@ -102,6 +129,8 @@ def generate_legal_moves(game_state):
   game_states = []
   piece_types = []
   for i in range(73):
+    if i == 58:
+        continue
     # for each layer we want to check if pieces can move in layer direction
 
     # get both pieces that make move of type i, and displacement of move i
@@ -112,14 +141,13 @@ def generate_legal_moves(game_state):
     for piece_x, piece_y, piece_type in my_positions:
       if piece_type in piece_for_this_kind_of_move[turn]:
         # here we know we can move this piece in this direction so test potential location
-        potential_piece_x, potential_piece_y = (piece_x,
-                                                piece_y) + piece_and_move[1]
+        potential_piece_y, potential_piece_x = np.add((piece_y, piece_x), piece_and_move[1])
         # first check if new location is out of bounds or my piece is blocking
-        within_board = (0 <= potential_piece_x <= 8
-                        and 0 <= potential_piece_y <= 8)
+        within_board = (0 <= potential_piece_x < 8
+                        and 0 <= potential_piece_y < 8)
         piece_present = False
         for pos in my_positions:
-          if potential_piece_x == pos[0] and potential_piece_y == pos[1]:
+          if potential_piece_x == pos[1] and potential_piece_y == pos[2]:
             piece_present = True
             break
 
@@ -160,10 +188,11 @@ def generate_legal_moves(game_state):
               new_game_state[piece_location[0], piece_location[1],
                              piece_location[2]] = 0
 
+            print(new_game_state)
+            print("----------------------------------------------------------------------------------------")
             # Convert back to sparse tensor and add to new game states
             new_game_state_sparse = tf.sparse.from_dense(new_game_state)
             game_states.append(new_game_state_sparse)
-
             # lastly need to add piece type for legal move for visualization
             piece_types.append(
                 i)  # one task could be getting this in the right format
@@ -204,3 +233,4 @@ def generate_legal_moves(game_state):
 #def is_in_check( game_state)
   # does it make sense to say that if king_is_threatened is true then the king is in check?
 
+generate_legal_moves(game_state)

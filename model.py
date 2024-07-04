@@ -29,7 +29,7 @@ class AlphaNet(keras.Model):
     def __init__(self, num_resBlocks, num_hidden, t):
         super(AlphaNet, self).__init__()
         self.startBlock = tf.keras.Sequential([
-            layers.Input(shape=(8, 8, 12)),  # Adjust based on Chess Board
+            layers.Input(shape=(8, 8, 12)),  # Adjust based on Chess Board # NEED TO MAKE LAYER, X, Y
             layers.Conv2D(num_hidden, kernel_size=3, padding='same'),
             layers.BatchNormalization(),
             layers.ReLU()
